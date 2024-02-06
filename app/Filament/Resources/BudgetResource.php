@@ -142,9 +142,11 @@ class BudgetResource extends Resource
                     ->sortable(),
                 TextColumn::make('spend_amount')
                     ->label(__('budgets.fields.spend_amount'))
+                    ->state(fn (?Model $record): string => ($record->amount+$record->spend_amount))
+                    ->tooltip(fn (?Model $record): string => -$record->spend_amount)
                     ->numeric()
                     ->sortable()
-                    ->color(fn(?Model $record) => $record->spend_amount * -1 > $record->amount ? 'danger' : ''),
+                    ->color(fn(?Model $record) => $record->spend_amount * -1 > $record->amount ? 'danger' : 'success'),
                 Tables\Columns\IconColumn::make('status')
                     ->label(__('budgets.fields.enabled'))
                     ->icon(fn (string $state): string => match ($state) {
@@ -179,10 +181,11 @@ class BudgetResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            \App\Filament\Resources\BudgetResource\RelationManagers\TransactionsRelationManager::class
         ];
     }
     
+
     public static function getPages(): array
     {
         return [

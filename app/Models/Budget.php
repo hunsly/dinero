@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Shipu\Watchable\Traits\WatchableTrait;
@@ -33,7 +34,10 @@ class Budget extends Model
     {
         return Attribute::make(
             get: function() {
-                return $this->categories->sum('balance');
+                //return $this->categories->sum('balance');
+                return $this->transactions
+                    ->whereBetween('happened_at', [now()->modify("-6 days")->toDateString(), now()->toDateString()])
+                    ->sum('amount');
             }
         );
     }
@@ -51,5 +55,10 @@ class Budget extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'budget_category', 'budget_id', 'category_id');
+    }
+
+    public function transactions(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough( Transaction::class,Category::class, 'id', 'category_id');
     }
 }

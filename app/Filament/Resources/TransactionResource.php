@@ -49,16 +49,16 @@ class TransactionResource extends Resource
                         Radio::make('type')
                             ->default(TransactionTypeEnum::WITHDRAW->value)
                             ->formatStateUsing(function (string $state, ?Model $record): string {
-                                if(!blank($record)) {
-                                    if($record->isTransferTransaction) {
+                                if (!blank($record)) {
+                                    if ($record->isTransferTransaction) {
                                         return TransactionTypeEnum::TRANSFER->value;
                                     }
                                 }
                                 return $state;
                             })
-                            ->disableOptionWhen(function(?Model $record){
-                                if(!blank($record)) {
-                                    if($record->isTransferTransaction) {
+                            ->disableOptionWhen(function (?Model $record) {
+                                if (!blank($record)) {
+                                    if ($record->isTransferTransaction) {
                                         return true;
                                     }
                                 }
@@ -81,9 +81,9 @@ class TransactionResource extends Resource
                         TextInput::make('amount')
                             ->label(__('transactions.fields.amount'))
                             ->required()
-                            ->disabled(function(?Model $record){
-                                if(!blank($record)) {
-                                    if($record->isTransferTransaction || $record->isPaymentTransaction) {
+                            ->disabled(function (?Model $record) {
+                                if (!blank($record)) {
+                                    if ($record->isTransferTransaction || $record->isPaymentTransaction) {
                                         return true;
                                     }
                                 }
@@ -91,7 +91,7 @@ class TransactionResource extends Resource
                             })
                             ->autofocus()
                             ->formatStateUsing(function ($state, ?Model $record): string|null {
-                                if(!blank($record)) {
+                                if (!blank($record)) {
                                     return $record->amount_float;
                                 }
                                 return $state;
@@ -109,16 +109,16 @@ class TransactionResource extends Resource
                             ->required()
                             ->columnSpan(2)
                             ->disabled(function (?Model $record): bool {
-                                if(!blank($record)) {
-                                    if($record->isTransferTransaction || $record->isPaymentTransaction) {
+                                if (!blank($record)) {
+                                    if ($record->isTransferTransaction || $record->isPaymentTransaction) {
                                         return true;
                                     }
                                 }
                                 return false;
                             })
                             ->visible(function (Get $get, ?Model $record): bool {
-                                if(!blank($record)) {
-                                    if($record->isTransferTransaction || $record->isPaymentTransaction) {
+                                if (!blank($record)) {
+                                    if ($record->isTransferTransaction || $record->isPaymentTransaction) {
                                         return true;
                                     }
 
@@ -129,13 +129,13 @@ class TransactionResource extends Resource
                         Select::make('category_id')
                             ->label(__('transactions.fields.category'))
                             ->columnSpan(2)
-                            ->relationship('category', 'name', function(Builder $query, Get $get){
+                            ->relationship('category', 'name', function (Builder $query, Get $get) {
                                 $spendType = match ($get('type')) {
                                     TransactionTypeEnum::WITHDRAW->value => SpendTypeEnum::EXPENSE->value,
                                     TransactionTypeEnum::DEPOSIT->value => SpendTypeEnum::INCOME->value,
                                     default => null,
                                 };
-                                if(!is_null($spendType)) {
+                                if (!is_null($spendType)) {
                                     return $query->tenant()->where('type', $spendType);
                                 }
 
@@ -147,15 +147,15 @@ class TransactionResource extends Resource
                                 return in_array($get('type'), [TransactionTypeEnum::DEPOSIT->value, TransactionTypeEnum::WITHDRAW->value]);
                             }),
                         Select::make('from_wallet_id')
-                            ->label( __('transactions.fields.from_wallet'))
-                            ->relationship('wallet', 'name', function(Builder $query, Get $get){
-                                if($get('type') == TransactionTypeEnum::PAYMENT->value) {
+                            ->label(__('transactions.fields.from_wallet'))
+                            ->relationship('wallet', 'name', function (Builder $query, Get $get) {
+                                if ($get('type') == TransactionTypeEnum::PAYMENT->value) {
                                     $query = $query->where('type', WalletTypeEnum::GENERAL->value);
                                 }
                                 return $query;
                             })
                             ->live()
-                            ->columnSpan(function(Get $get, ?Model $record): int {
+                            ->columnSpan(function (Get $get, ?Model $record): int {
                                 return blank($get('from_wallet_id')) ? 2 : 1;
                             })
                             ->searchable()
@@ -164,9 +164,9 @@ class TransactionResource extends Resource
                             ->afterStateUpdated(function (Set $set) {
                                 $set('to_wallet_id', null);
                             })
-                            ->visible(function(Get $get, ?Model $record): bool {
-                                if(!blank($record)) {
-                                    if($record->isTransferTransaction || $record->isPaymentTransaction) {
+                            ->visible(function (Get $get, ?Model $record): bool {
+                                if (!blank($record)) {
+                                    if ($record->isTransferTransaction || $record->isPaymentTransaction) {
                                         return false;
                                     }
                                 }
@@ -174,9 +174,9 @@ class TransactionResource extends Resource
                             }),
                         Select::make('to_wallet_id')
                             ->label(__('transactions.fields.to_wallet'))
-                            ->relationship('wallet', 'name', function(Builder $query, Get $get){
+                            ->relationship('wallet', 'name', function (Builder $query, Get $get) {
                                 $query = $query->where('id', '!=', $get('from_wallet_id'));
-                                if($get('type') == TransactionTypeEnum::PAYMENT->value) {
+                                if ($get('type') == TransactionTypeEnum::PAYMENT->value) {
                                     $query = $query->where('type', WalletTypeEnum::CREDIT_CARD->value);
                                 }
                                 return $query;
@@ -185,8 +185,8 @@ class TransactionResource extends Resource
                             ->preload()
                             ->required()
                             ->visible(function (Get $get, ?Model $record): bool {
-                                if(!blank($record)) {
-                                    if($record->isTransferTransaction || $record->isPaymentTransaction) {
+                                if (!blank($record)) {
+                                    if ($record->isTransferTransaction || $record->isPaymentTransaction) {
                                         return false;
                                     }
                                 }
@@ -234,7 +234,7 @@ class TransactionResource extends Resource
                 ->formatStateUsing(fn (string $state): string => __("transactions.types.{$state}.label"))
                 ->label(__('transactions.fields.type'))
                 ->searchable(),
-            Tables\Columns\TextColumn::make('amount_float')
+            Tables\Columns\TextColumn::make('amount')
                 ->label(__('transactions.fields.amount'))
                 ->numeric()
                 ->sortable(),
@@ -242,20 +242,27 @@ class TransactionResource extends Resource
                 ->label(__('transactions.fields.wallet'))
                 ->weight('bold')
                 ->default('—')
-                ->color(fn(?Model $record): array => Color::hex(optional($record->wallet)->color ?? '#dcdcdc'))
+                ->color(fn (?Model $record): array => Color::hex(optional($record->wallet)->color ?? '#dcdcdc'))
                 ->sortable(),
             Tables\Columns\TextColumn::make('category.name')
                 ->label(__('transactions.fields.category'))
                 ->weight('bold')
                 ->default('—')
-                ->icon(fn(?Model $record): string => optional($record->category)->icon ?? '')
-                ->color(fn(?Model $record): array => Color::hex(optional($record->category)->color ?? '#dcdcdc'))
+                ->icon(fn (?Model $record): string => optional($record->category)->icon ?? '')
+                ->color(fn (?Model $record): array => Color::hex(optional($record->category)->color ?? '#dcdcdc'))
                 ->sortable(),
             Tables\Columns\IconColumn::make('confirmed')
                 ->label(__('transactions.fields.confirmed'))
                 ->boolean()
                 ->trueIcon('lucide-check-circle')
                 ->falseIcon('lucide-x-circle'),
+            Tables\Columns\TextColumn::make('amount')
+                ->label(__('transactions.fields.amount'))
+                ->numeric()
+                ->summarize([
+                    \Filament\Tables\Columns\Summarizers\Count::make(),
+                    \Filament\Tables\Columns\Summarizers\Sum::make(),
+                ])
         ];
     }
 
@@ -273,6 +280,25 @@ class TransactionResource extends Resource
                     ->preload()
                     ->searchable(),
                 Tables\Filters\TrashedFilter::make(),
+
+                Tables\Filters\Filter::make('happened_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('created_from')
+                        ->default(now()->modify("-6 days")->toDateString()),
+                        Forms\Components\DatePicker::make('created_until')
+                            ->default(now()->toDateString()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('happened_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('happened_at', '<=', $date),
+                            );
+                    })
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

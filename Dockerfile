@@ -23,6 +23,9 @@ RUN composer dump-autoload --optimize --classmap-authoritative
 
 FROM php:${PHP_VERSION}-fpm-alpine
 
+ARG UID=1000
+ARG GID=1000
+
 RUN apk update && \
     apk add \
         curl \
@@ -40,6 +43,7 @@ RUN apk update && \
         zip \
         gd \
     	openssl-dev \
+        shadow \
         $PHPIZE_DEPS
 
 RUN docker-php-ext-configure zip && \
@@ -75,10 +79,14 @@ COPY docker/app/supervisor.conf /etc/supervisor/conf.d/worker.conf
 
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-RUN chown -R www-data:www-data /var/www/html/storage/*
+COPY --chown=www-data:www-data . .
 
-RUN chmod -R o+w storage/
-RUN chmod -R o+w bootstrap/cache/
+RUN chown -R www-data /var/www/html/storage
+RUN chown -R www-data /var/www/html/bootstrap
+RUN chmod -R 755 /var/www/html/storage
+RUN chmod -R 755 /var/www/html/bootstrap
+RUN usermod --uid ${UID} www-data
+RUN groupmod --gid ${GID} www-data
 
 ENTRYPOINT ["entrypoint.sh"]
 
